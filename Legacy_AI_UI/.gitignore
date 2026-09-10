@@ -1,0 +1,27 @@
+# v0 sandbox internal files
+__v0_runtime_loader.js
+__v0_devtools.tsx
+__v0_jsx-dev-runtime.ts
+.snowflake/
+.v0-trash/
+.vercel/
+
+# Environment variables
+.env*.local
+.env
+
+# Common ignores
+node_modules/
+.next/
+dist-electron/
+dist-e*/
+
+# TypeScript incremental-build cache — machine/run-specific, regenerated on every `tsc`
+tsconfig.tsbuildinfo
+
+# Desktop installer binary — too large to commit; host on a CDN/release page for
+# real distribution instead of bundling into the Next.js app's static assets.
+public/downloads/
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat

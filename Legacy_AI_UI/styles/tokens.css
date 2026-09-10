@@ -1,0 +1,165 @@
+:root,
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg:        oklch(0.992 0.008 295);
+  --surface:   oklch(1 0 0);
+  --surface-2: oklch(0.97 0.012 295);
+  --surface-3: oklch(0.94 0.018 295);
+
+  /* Borders */
+  --border:   oklch(0.91 0.015 295 / 60%);
+  --border-2: oklch(0.87 0.02 295 / 70%);
+
+  /* Brand */
+  --primary:      #7c3aed;
+  --primary-dim:  #6d28d9;
+  --primary-fg:   #ffffff;
+  --primary-glow: rgba(124, 58, 237, 0.18);
+
+  /* Semantic */
+  --secondary: #0891b2;
+  --success:   #16a34a;
+  --warning:   #d97706;
+  --danger:    #dc2626;
+
+  /* Text */
+  --text-1: oklch(0.09 0.018 285);
+  --text-2: oklch(0.42 0.04 285);
+  --text-3: oklch(0.63 0.025 285);
+
+  /* Spacing */
+  --space-1: 4px;  --space-2: 8px;   --space-3: 12px;
+  --space-4: 16px; --space-5: 20px;  --space-6: 24px;
+  --space-8: 32px; --space-10: 40px; --space-12: 48px;
+
+  /* Radius */
+  --radius-sm: 6px; --radius-md: 10px;
+  --radius-lg: 14px; --radius-xl: 20px;
+
+  /* Type scale (font-size / line-height) */
+  --text-xs:   11px; --text-xs-lh:   16px;
+  --text-sm:   13px; --text-sm-lh:   18px;
+  --text-base: 14px; --text-base-lh: 20px;
+  --text-md:   16px; --text-md-lh:   24px;
+  --text-lg:   18px; --text-lg-lh:   26px;
+  --text-xl:   22px; --text-xl-lh:   30px;
+  --text-2xl:  28px; --text-2xl-lh:  34px;
+
+  /* React Flow minimap mask (area outside the viewport rectangle) */
+  --minimap-mask: rgba(0, 0, 0, 0.06);
+
+  /* Elevation — tinted toward the brand hue (293) instead of flat black, so
+     depth reads as "machined" rather than a generic drop shadow. */
+  --elevation-1: 0 1px 2px oklch(0.3 0.03 293 / 5%), 0 4px 12px oklch(0.3 0.03 293 / 5%);
+  --elevation-2: 0 2px 6px oklch(0.3 0.05 293 / 7%), 0 8px 24px oklch(0.3 0.05 293 / 6%);
+  --elevation-3: 0 8px 24px oklch(0.3 0.06 293 / 9%), 0 16px 48px oklch(0.3 0.06 293 / 9%);
+
+  /* Transitions */
+  --transition-fast: 120ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-base: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-slow: 380ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] {
+  --bg:        oklch(0.105 0.022 285);
+  --surface:   oklch(0.145 0.024 285);
+  --surface-2: oklch(0.17 0.026 285);
+  --surface-3: oklch(0.2 0.028 285);
+  --border:    oklch(1 0 0 / 7%);
+  --border-2:  oklch(1 0 0 / 11%);
+  --minimap-mask: rgba(255, 255, 255, 0.08);
+  --primary:      #a78bfa;
+  --primary-dim:  #8b5cf6;
+  --primary-glow: rgba(124, 58, 237, 0.28);
+  --text-1: oklch(0.97 0.006 295);
+  --text-2: oklch(0.63 0.03 290);
+  --text-3: oklch(0.45 0.025 290);
+  --elevation-1: 0 1px 3px oklch(0 0 0 / 35%), 0 0 0 1px oklch(0.72 0.19 293 / 4%);
+  --elevation-2: 0 4px 16px oklch(0 0 0 / 40%), 0 0 0 1px oklch(0.72 0.19 293 / 6%);
+  --elevation-3: 0 12px 40px oklch(0 0 0 / 50%), 0 0 0 1px oklch(0.72 0.19 293 / 8%);
+}
+
+@layer components {
+  /* Heading utilities built on the type scale */
+  .text-h1 { font-size: var(--text-2xl); line-height: var(--text-2xl-lh); font-weight: 700; letter-spacing: -0.02em; }
+  .text-h2 { font-size: var(--text-xl);  line-height: var(--text-xl-lh);  font-weight: 700; letter-spacing: -0.01em; }
+  .text-h3 { font-size: var(--text-lg);  line-height: var(--text-lg-lh);  font-weight: 600; }
+  .text-h4 { font-size: var(--text-md);  line-height: var(--text-md-lh);  font-weight: 600; }
+}
+
+@layer components {
+  /* Light glass */
+  .glass {
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid oklch(0.91 0.015 295 / 60%);
+    backdrop-filter: blur(20px) saturate(180%);
+    border-radius: var(--radius-lg);
+    box-shadow:
+      0 1px 3px oklch(0 0 0 / 5%),
+      0 4px 16px oklch(0 0 0 / 6%);
+  }
+
+  .glass-hover:hover {
+    border-color: oklch(0.52 0.25 293 / 30%);
+    box-shadow:
+      0 0 0 1px oklch(0.52 0.25 293 / 10%),
+      0 6px 24px oklch(0 0 0 / 8%);
+    transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  }
+
+  /* Card elevation tiers */
+  .card-1 {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--elevation-1);
+    transition: box-shadow var(--transition-base), border-color var(--transition-base);
+  }
+  .card-1:hover {
+    box-shadow: var(--elevation-2);
+  }
+
+  .card-2 {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--elevation-2);
+  }
+}
+
+/* Dark glass overrides */
+[data-theme="dark"] .glass {
+  background: oklch(1 0 0 / 3%);
+  border: 1px solid oklch(1 0 0 / 7%);
+  box-shadow:
+    0 0 0 1px oklch(1 0 0 / 3%),
+    0 8px 32px oklch(0 0 0 / 40%);
+}
+
+[data-theme="dark"] .glass-hover:hover {
+  border-color: oklch(0.72 0.19 293 / 25%);
+  box-shadow:
+    0 0 0 1px oklch(0.72 0.19 293 / 12%),
+    0 8px 32px oklch(0 0 0 / 50%);
+}
+
+[data-theme="dark"] .card-1,
+[data-theme="dark"] .card-2 {
+  background: var(--surface);
+  border-color: var(--border);
+  box-shadow: 0 1px 3px oklch(0 0 0 / 40%);
+}
+[data-theme="dark"] .card-1:hover {
+  border-color: oklch(1 0 0 / 12%);
+  box-shadow: 0 4px 20px oklch(0 0 0 / 50%);
+}
+
+/* Voice-recording waveform bars (chat composer) */
+@keyframes voice-wave {
+  0%, 100% { transform: scaleY(0.35); }
+  50%      { transform: scaleY(1); }
+}
+.voice-wave-bar {
+  animation: voice-wave 900ms ease-in-out infinite;
+  transform-origin: center;
+}

@@ -1,0 +1,80 @@
+# docker-compose.yml
+
+services:
+  fastapi:
+    build: .
+    container_name: fastapi_app
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - UV_PROJECT_ENVIRONMENT=/opt/venv
+    volumes:
+      - ./:/app # Mount for development
+      - uv_cache:/root/.cache/uv # Cache uv packages
+    networks:
+      - app_network
+    command: uv run --no-sync uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:7-alpine
+    container_name: schedule_redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - app_network
+
+  celery_worker:
+    build: .
+    container_name: schedule_celery_worker
+    env_file:
+      - .env
+    environment:
+      - UV_PROJECT_ENVIRONMENT=/opt/venv
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+    volumes:
+      - ./:/app
+      - uv_cache:/root/.cache/uv
+    networks:
+      - app_network
+    depends_on:
+      - redis
+    # --pool=threads (not the default prefork): direct_chat() is fully async
+    # (Motor + graph.ainvoke), and forking a process that already holds an
+    # open AsyncIOMotorClient/event loop is unsafe. See ai/schedule/tasks.py.
+    command: uv run --no-sync celery -A ai.schedule.celery_app worker --loglevel=info -Q schedules --pool=threads --concurrency=8
+
+  celery_beat:
+    build: .
+    container_name: schedule_celery_beat
+    env_file:
+      - .env
+    environment:
+      - UV_PROJECT_ENVIRONMENT=/opt/venv
+      - REDIS_URL=redis://redis:6379/0
+      - PYTHONPATH=/app
+    volumes:
+      - ./:/app
+      - uv_cache:/root/.cache/uv
+    networks:
+      - app_network
+    depends_on:
+      - redis
+    # Single process by design -- only one beat should ever run. It only
+    # enqueues (see tick_schedules in ai/schedule/tasks.py), so restarting it
+    # after a crash is cheap; a brief outage just delays the next tick, it
+    # never causes a catch-up storm.
+    restart: unless-stopped
+    command: uv run --no-sync celery -A ai.schedule.celery_app beat --loglevel=info
+
+volumes:
+  uv_cache:
+  redis_data:
+
+networks:
+  app_network:
+    driver: bridge
