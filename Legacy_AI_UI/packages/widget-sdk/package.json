@@ -1,0 +1,36 @@
+{
+  "name": "@one-ai/widget",
+  "version": "0.1.0",
+  "description": "Typed loader for the One-AI embeddable chatbot widget. Injects the hosted widget.js (so embeds stay current automatically) and exposes a typed init/destroy API for SPA lifecycles.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "scripts": {
+    "build": "tsc -p tsconfig.json && node build-cjs.mjs",
+    "prepublishOnly": "npm run build"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  },
+  "keywords": [
+    "one-ai",
+    "chatbot",
+    "widget",
+    "chat",
+    "embed"
+  ]
+}

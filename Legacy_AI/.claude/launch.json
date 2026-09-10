@@ -1,0 +1,56 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "FastAPI Backend",
+      "runtimeExecutable": "docker",
+      "runtimeArgs": [
+        "compose",
+        "up",
+        "--build",
+        "fastapi"
+      ],
+      "port": 8000
+    },
+    {
+      "name": "LangGraph Studio",
+      "runtimeExecutable": "uv",
+      "runtimeArgs": [
+        "run",
+        "langgraph",
+        "dev",
+        "--config",
+        "ai/langgraph.json",
+        "--port",
+        "2024"
+      ],
+      "port": 2024
+    },
+    {
+      "name": "One-AI-UI Frontend",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "D:\\Development-Work\\One-AI-UI",
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "One-AI-UI Prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "--prefix",
+        "D:\\Development-Work\\One-AI-UI",
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3100"
+      ],
+      "port": 3100
+    }
+  ]
+}

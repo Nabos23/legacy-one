@@ -1,0 +1,148 @@
+# =============================================================================
+# Environment & Secrets — NEVER commit these
+# =============================================================================
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.secret
+secrets/
+credentials/
+
+# Locally stored uploads (profile pictures, etc.) — not source, not to be committed
+media/
+
+# =============================================================================
+# Python
+# =============================================================================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg
+*.egg-info/
+dist/
+build/
+eggs/
+parts/
+var/
+sdist/
+develop-eggs/
+.installed.cfg
+lib/
+lib64/
+wheels/
+*.whl
+MANIFEST
+
+# =============================================================================
+# Virtual environments
+# =============================================================================
+.venv/
+venv/
+ENV/
+env/
+.env/
+
+# =============================================================================
+# uv
+# =============================================================================
+# uv.lock is intentionally committed (reproducible installs)
+# but the cache dir should not be
+.uv-cache/
+
+# =============================================================================
+# Testing & coverage
+# =============================================================================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+nosetests.xml
+coverage.xml
+*.cover
+test_results.json
+
+# =============================================================================
+# IDE & editors
+# =============================================================================
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# .vscode/tasks.json can auto-execute on folder open (runOn:
+# folderOpen) — a malicious task was found committed here before, so it's no
+# longer tracked. Keep settings.json/extensions.json shared, not this.
+.vscode/tasks.json
+public/fonts/
+
+# =============================================================================
+# Logs & output
+# =============================================================================
+*.log
+logs/
+*.out
+
+# =============================================================================
+# MongoDB
+# =============================================================================
+data/
+dump/
+mongodump/
+*.db          # SQLite / local test DBs (e.g. test.db)
+
+# =============================================================================
+# Docker
+# =============================================================================
+# Keep docker-compose.yml but ignore local override files
+docker-compose.override.yml
+docker-compose.local.yml
+
+# =============================================================================
+# LangGraph Studio
+# =============================================================================
+# Studio caches its own state here — not project code
+.langgraph/
+.langgraph_api/
+
+# =============================================================================
+# Claude Code
+# =============================================================================
+.claude/settings.local.json
+
+# Locally installed Claude Code skills — personal dev tooling, not app code
+.agents/
+**/SKILL.md
+**/DESIGN.md
+
+# =============================================================================
+# Jupyter
+# =============================================================================
+.ipynb_checkpoints/
+*.ipynb
+
+# =============================================================================
+# Generated / build artifacts
+# =============================================================================
+REPORT.md
+*.tmp
+*.bak
+*.orig
+celerybeat-schedule
+branch_structure.json
+temp_auto_push.bat
+temp_interactive_push.bat
+
+# local QA sqlite test artifact
+qa_test_temp.db
+
+# Local run/result dumps & scratch
+live_direct_flows_results.txt
+memory_dumps/

@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  :root { color-scheme: light dark; }
+  html, body {
+    margin: 0; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    background: #0b0b0e; color: #e8e8ec;
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  }
+  .wrap { text-align: center; max-width: 360px; padding: 24px; }
+  .logo { width: 56px; height: 56px; border-radius: 14px; margin: 0 auto 20px; display: block; }
+  h1 { font-size: 15px; font-weight: 600; margin: 0 0 8px; }
+  p { font-size: 13px; color: #9a9aa2; margin: 0 0 20px; line-height: 1.5; }
+  .spinner {
+    width: 22px; height: 22px; margin: 0 auto 20px;
+    border: 2px solid #33333a; border-top-color: #7c3aed;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  .spinner.hidden { display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  button {
+    background: #7c3aed; color: white; border: none;
+    padding: 8px 18px; border-radius: 8px; font-size: 13px;
+    cursor: pointer; display: none;
+  }
+  button:hover { background: #6d28d9; }
+  body.failed .spinner { display: none; }
+  body.failed button { display: inline-block; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <svg class="logo" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect width="180" height="180" rx="44" fill="#7c3aed" />
+      <g transform="translate(35 35) scale(4.583)" fill="none" stroke="#ffffff" stroke-width="1.7" stroke-linecap="round">
+        <path d="M12 5.5 L6 17 M12 5.5 L18 17" />
+        <circle cx="12" cy="5" r="2.7" fill="#ffffff" stroke="none" />
+        <circle cx="5.5" cy="18" r="2.3" fill="#ffffff" stroke="none" />
+        <circle cx="18.5" cy="18" r="2.3" fill="#ffffff" stroke="none" />
+      </g>
+    </svg>
+    <div class="spinner"></div>
+    <h1 id="title">Connecting to One-AI…</h1>
+    <p id="detail">Waiting for the app server to respond.</p>
+    <button id="retry">Retry</button>
+  </div>
+  <script>
+    document.getElementById('retry').addEventListener('click', () => {
+      document.body.classList.remove('failed')
+      document.getElementById('title').textContent = 'Connecting to One-AI…'
+      document.getElementById('detail').textContent = 'Waiting for the app server to respond.'
+      window.desktop.retryConnection()
+    })
+    window.desktop.onConnectionFailed(() => {
+      document.body.classList.add('failed')
+      document.getElementById('title').textContent = "Can't reach One-AI"
+      document.getElementById('detail').textContent = 'The app server is not responding. Check your connection and try again.'
+    })
+  </script>
+</body>
+</html>

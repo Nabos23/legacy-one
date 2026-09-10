@@ -1,0 +1,984 @@
+<title>Knowledge Base Architecture</title>
+<style>
+  :root {
+    --ground: #f5f3ee;
+    --surface: #ffffff;
+    --ink: #1c1a16;
+    --ink-dim: #5b5750;
+    --line: #d6d1c6;
+    --accent: #b5591f;
+    --accent2: #2f6b5e;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #15161a;
+      --surface: #1b1c21;
+      --ink: #eae7de;
+      --ink-dim: #9a978d;
+      --line: #34363d;
+      --accent: #e08a4c;
+      --accent2: #6bb3a1;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ground: #15161a;
+    --surface: #1b1c21;
+    --ink: #eae7de;
+    --ink-dim: #9a978d;
+    --line: #34363d;
+    --accent: #e08a4c;
+    --accent2: #6bb3a1;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: -apple-system, "Segoe UI", "IBM Plex Sans", system-ui, sans-serif;
+    line-height: 1.55;
+  }
+  .page { max-width: 1000px; margin: 0 auto; padding: 56px 24px 96px; }
+  .mono { font-family: ui-monospace, "Cascadia Code", "SF Mono", "Consolas", monospace; }
+  header.hero {
+    display: flex; flex-direction: column; gap: 10px;
+    margin-bottom: 48px; border-bottom: 1px solid var(--line); padding-bottom: 28px;
+  }
+  .eyebrow {
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", monospace;
+    font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--accent); display: flex; align-items: center; gap: 8px;
+  }
+  .eyebrow .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  h1 {
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", monospace;
+    font-size: clamp(28px, 4vw, 38px); font-weight: 600; letter-spacing: -0.01em;
+    margin: 0; text-wrap: balance;
+  }
+  .subtitle { color: var(--ink-dim); font-size: 16px; max-width: 62ch; }
+  section { margin: 48px 0; }
+  h2 {
+    font-family: ui-monospace, "Cascadia Code", "SF Mono", monospace;
+    font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--ink-dim); margin: 0 0 16px; display: flex; align-items: baseline; gap: 10px;
+  }
+  h2::before { content: attr(data-n); color: var(--accent); font-weight: 700; }
+  p { margin: 0 0 14px; max-width: 74ch; }
+  .lede { font-size: 17px; color: var(--ink); max-width: 68ch; }
+
+  .figure-wrap {
+    overflow-x: auto; background: var(--surface); border: 1px solid var(--line);
+    border-radius: 6px; padding: 20px;
+  }
+  figure { margin: 0; }
+  figcaption { margin-top: 14px; font-size: 13px; color: var(--ink-dim); max-width: 84ch; }
+  svg text { font-family: ui-monospace, "Cascadia Code", "SF Mono", monospace; fill: currentColor; }
+
+  footer {
+    margin-top: 64px; padding-top: 20px; border-top: 1px solid var(--line);
+    font-size: 12px; color: var(--ink-dim); font-family: ui-monospace, monospace;
+  }
+
+  .tldr {
+    border: 1px solid var(--accent); border-radius: 8px;
+    padding: 28px; margin-bottom: 8px; background: var(--surface);
+  }
+  .tldr h2 { margin-bottom: 8px; }
+  .tldr > p.lede { margin-bottom: 22px; }
+  .summary-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: 12px; margin-top: 6px;
+  }
+  .summary-card {
+    background: var(--ground); border: 1px solid var(--line); border-radius: 6px;
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;
+  }
+  .summary-card svg { width: 100%; height: auto; display: block; }
+  .summary-card h3 { font-size: 13px; margin: 0; font-weight: 600; color: var(--ink); }
+  .summary-card p { font-size: 12px; margin: 0; color: var(--ink-dim); max-width: none; line-height: 1.45; }
+</style>
+
+<div class="page">
+  <header class="hero">
+    <div class="eyebrow"><span class="dot"></span>complete architecture</div>
+    <h1>Knowledge Base Architecture</h1>
+    <p class="subtitle">A scoped, hybrid retrieval layer on Qdrant Cloud: org, user, and agent-level Knowledge Bases sharing one collection.</p>
+  </header>
+
+  <div class="tldr">
+    <div class="eyebrow"><span class="dot"></span>one-page summary, for presenting</div>
+    <h2 style="margin-top:6px">The whole thing, in one page</h2>
+    <p class="lede">A document gets uploaded, chunked, and stored once. A question gets cleaned up, searched against three tiers at once (company, personal, agent), combined into one ranked list, permission-checked, and handed to the AI. Every stage below has a full diagram further down this page.</p>
+
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 1060 120" role="img" aria-label="The full pipeline in one row: upload, chunk and embed, Qdrant store, rephrase, search three tiers, graph expand, merge and rerank, scope filter, agent.">
+          <g stroke="currentColor" fill="none" stroke-width="1.2">
+            <rect x="20" y="30" width="100" height="60" rx="4"/>
+            <rect x="135" y="30" width="100" height="60" rx="4"/>
+            <rect x="365" y="30" width="100" height="60" rx="4"/>
+            <rect x="595" y="30" width="100" height="60" rx="4"/>
+            <rect x="710" y="30" width="100" height="60" rx="4"/>
+            <rect x="825" y="30" width="100" height="60" rx="4"/>
+          </g>
+          <rect x="250" y="30" width="100" height="60" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <rect x="480" y="30" width="100" height="60" rx="4" stroke="var(--accent2)" stroke-width="1.6" fill="none"/>
+          <rect x="940" y="30" width="100" height="60" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <g text-anchor="middle" font-size="11">
+            <text x="70" y="64">Upload</text>
+            <text x="185" y="56">Chunk +</text>
+            <text x="185" y="70">Embed</text>
+            <text x="300" y="56" fill="var(--accent)" font-weight="600">Qdrant</text>
+            <text x="300" y="70" fill="var(--accent)" font-weight="600">Store</text>
+            <text x="415" y="64">Rephrase</text>
+            <text x="530" y="56" fill="var(--accent2)" font-weight="600">3 Tier</text>
+            <text x="530" y="70" fill="var(--accent2)" font-weight="600">Search</text>
+            <text x="760" y="56">Graph</text>
+            <text x="760" y="70">Expand</text>
+            <text x="875" y="56">Merge +</text>
+            <text x="875" y="70">Rerank</text>
+            <text x="990" y="56" fill="var(--accent)" font-weight="600">Scope</text>
+            <text x="990" y="70" fill="var(--accent)" font-weight="600">Filter</text>
+          </g>
+          <g stroke="currentColor" stroke-width="1.2">
+            <line x1="120" y1="60" x2="133" y2="60"/>
+            <line x1="235" y1="60" x2="248" y2="60"/>
+            <line x1="350" y1="60" x2="363" y2="60"/>
+            <line x1="465" y1="60" x2="478" y2="60"/>
+            <line x1="580" y1="60" x2="593" y2="60"/>
+            <line x1="695" y1="60" x2="708" y2="60"/>
+            <line x1="810" y1="60" x2="823" y2="60"/>
+            <line x1="925" y1="60" x2="938" y2="60"/>
+          </g>
+        </svg>
+      </figure>
+    </div>
+
+    <div class="summary-grid">
+      <div class="summary-card">
+        <svg viewBox="0 0 180 56"><g stroke="currentColor" fill="none" stroke-width="1.2">
+          <rect x="6" y="18" width="32" height="20" rx="3"/><rect x="60" y="18" width="28" height="20" rx="3"/>
+          <rect x="110" y="18" width="24" height="20" rx="3"/><circle cx="160" cy="28" r="9"/>
+          <line x1="38" y1="28" x2="60" y2="28"/><line x1="88" y1="28" x2="110" y2="28"/><line x1="134" y1="28" x2="151" y2="28"/>
+        </g></svg>
+        <h3>One database, many tenants</h3>
+        <p>Every company, KB, and document lives in the same database, kept apart by tags, not separate databases.</p>
+      </div>
+      <div class="summary-card">
+        <svg viewBox="0 0 180 56"><g stroke="currentColor" fill="none" stroke-width="1.2">
+          <rect x="6" y="14" width="26" height="28" rx="2"/>
+          <rect x="70" y="10" width="14" height="14" rx="2"/><rect x="70" y="27" width="14" height="14" rx="2"/>
+          <rect x="90" y="18" width="14" height="14" rx="2"/>
+          <rect x="140" y="14" width="34" height="28" rx="14"/>
+          <line x1="32" y1="28" x2="70" y2="28"/><line x1="104" y1="25" x2="140" y2="25"/>
+        </g></svg>
+        <h3>Ingestion</h3>
+        <p>Upload a document, split it into small chunks, turn each into two searchable fingerprints, and save.</p>
+      </div>
+      <div class="summary-card">
+        <svg viewBox="0 0 180 56"><g stroke="currentColor" fill="none" stroke-width="1.2">
+          <rect x="10" y="14" width="60" height="26" rx="12"/><rect x="105" y="16" width="52" height="22" rx="11"/>
+          <line x1="70" y1="27" x2="105" y2="27"/>
+        </g></svg>
+        <h3>Query rephrase</h3>
+        <p>Clean up the question using recent chat, so "it" and "that" get resolved before searching.</p>
+      </div>
+      <div class="summary-card">
+        <svg viewBox="0 0 180 56"><g stroke="currentColor" fill="none" stroke-width="1.2">
+          <rect x="6" y="16" width="40" height="22" rx="3"/>
+          <circle cx="100" cy="19" r="3"/><circle cx="112" cy="19" r="3"/><circle cx="106" cy="30" r="3"/>
+          <circle cx="150" cy="16" r="2"/><circle cx="160" cy="24" r="2"/><circle cx="150" cy="32" r="2"/><circle cx="140" cy="24" r="2"/>
+          <line x1="46" y1="27" x2="95" y2="24"/>
+        </g></svg>
+        <h3>Query embedding</h3>
+        <p>Turn the question into the same two fingerprints used for documents: one for meaning, one for keywords.</p>
+      </div>
+      <div class="summary-card">
+        <svg viewBox="0 0 180 56"><g stroke="currentColor" fill="none" stroke-width="1.2">
+          <circle cx="90" cy="24" r="14"/><line x1="100" y1="34" x2="112" y2="46"/>
+          <line x1="30" y1="14" x2="30" y2="34"/><line x1="130" y1="12" x2="150" y2="12"/><line x1="130" y1="22" x2="150" y2="22"/><line x1="130" y1="32" x2="150" y2="32"/>
+        </g></svg>
+        <h3>Hybrid search</h3>
+        <p>Search with both fingerprints at once, scoped to just this tier's documents, in a single database call.</p>
+      </div>
+      <div class="summary-card">
+        <svg viewBox="0 0 180 56"><g stroke="currentColor" fill="none" stroke-width="1.2">
+          <circle cx="40" cy="28" r="6" fill="var(--accent2)" stroke="none"/><circle cx="80" cy="14" r="5"/><circle cx="90" cy="42" r="5"/><circle cx="120" cy="24" r="5"/>
+          <line x1="46" y1="26" x2="76" y2="17"/><line x1="45" y1="31" x2="86" y2="39"/><line x1="95" y1="27" x2="115" y2="24"/>
+        </g></svg>
+        <h3>Graph expand</h3>
+        <p>If turned on for that tier, also pull in chunks linked to the ones already found.</p>
+      </div>
+      <div class="summary-card">
+        <svg viewBox="0 0 180 56"><g stroke="currentColor" fill="none" stroke-width="1.2">
+          <line x1="10" y1="10" x2="70" y2="24"/><line x1="10" y1="28" x2="70" y2="26"/><line x1="10" y1="46" x2="70" y2="28"/>
+          <polygon points="70,14 70,38 105,26"/>
+          <line x1="105" y1="26" x2="150" y2="26"/>
+        </g></svg>
+        <h3>Merge + rerank</h3>
+        <p>Combine the ranked results from company, personal, and agent search into one list.</p>
+      </div>
+      <div class="summary-card">
+        <svg viewBox="0 0 180 56"><g stroke="currentColor" fill="none" stroke-width="1.2">
+          <polygon points="80,8 105,16 105,32 80,46 55,32 55,16" stroke="var(--accent)"/>
+          <path d="M68,27 L77,35 L94,18" stroke="var(--accent)"/>
+        </g></svg>
+        <h3>Scope filter</h3>
+        <p>Check permissions one more time and drop anything this person isn't allowed to see.</p>
+      </div>
+      <div class="summary-card">
+        <svg viewBox="0 0 180 56"><g stroke="currentColor" fill="none" stroke-width="1.2">
+          <rect x="10" y="14" width="58" height="26" rx="12"/>
+          <rect x="120" y="10" width="44" height="34" rx="6"/><circle cx="134" cy="27" r="3"/><circle cx="150" cy="27" r="3"/>
+          <line x1="68" y1="27" x2="120" y2="27"/>
+        </g></svg>
+        <h3>Agent context</h3>
+        <p>Hand the safe, ranked results to the AI as part of the conversation, and save them for later turns too.</p>
+      </div>
+      <div class="summary-card">
+        <svg viewBox="0 0 180 56"><g stroke="currentColor" fill="none" stroke-width="1.2">
+          <rect x="30" y="10" width="120" height="36" rx="4"/><line x1="30" y1="20" x2="150" y2="20"/>
+          <circle cx="38" cy="15" r="1.6" fill="currentColor" stroke="none"/>
+        </g></svg>
+        <h3>Frontend</h3>
+        <p>Reuses existing upload, permission, and connect-to-agent screens. New: a KB manager and showing sources in chat.</p>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <h2 data-n="01">Overview</h2>
+    <p class="lede">A Knowledge Base is owned at one of three tiers (organization, user, or agent), and each tier runs retrieval with its own settings. Documents land in one shared Qdrant collection, differentiated by payload rather than by separate collections. A query is rephrased, searched per tier, merged, and permission-filtered before it reaches the agent.</p>
+  </section>
+
+  <section>
+    <h2 data-n="02">Complete architecture</h2>
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 940 680" role="img" aria-label="Documents are uploaded, extracted, hybrid-chunked, and embedded as dense and sparse vectors into one Qdrant kb_chunks collection. A query is rephrased; both the rephrased query and the Qdrant store distribute to three parallel tier lanes: organization, user, and agent, each running hybrid search plus a per-tier graph-expansion setting against only its own knowledge base. The three lanes merge and rerank, pass a permission filter based on owner_scope, and produce the agent's context.">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <text x="20" y="14" font-size="11" fill="var(--accent)" font-weight="700" letter-spacing="0.06em">INGEST (runs once per document, regardless of tier)</text>
+          <g stroke="currentColor" fill="none" stroke-width="1.2">
+            <rect x="20" y="28" width="210" height="60" rx="4"/>
+            <rect x="250" y="28" width="210" height="60" rx="4"/>
+            <rect x="480" y="28" width="210" height="60" rx="4"/>
+            <rect x="710" y="28" width="210" height="60" rx="4"/>
+          </g>
+          <g text-anchor="middle" font-size="13">
+            <text x="125" y="63">Upload</text>
+            <text x="355" y="63">Extract text</text>
+            <text x="585" y="55">Hybrid chunk</text>
+            <text x="585" y="72" font-size="10" opacity="0.8">structure + meaning</text>
+            <text x="815" y="55">Embed</text>
+            <text x="815" y="72" font-size="10" opacity="0.8">dense + sparse (BM25)</text>
+          </g>
+          <g stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow)">
+            <line x1="230" y1="58" x2="248" y2="58"/>
+            <line x1="460" y1="58" x2="478" y2="58"/>
+            <line x1="690" y1="58" x2="708" y2="58"/>
+          </g>
+          <polyline points="815,88 815,103 785,103 785,116" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#arrow)"/>
+
+          <rect x="650" y="118" width="270" height="72" rx="5" stroke="var(--accent)" stroke-width="1.8" fill="none"/>
+          <g text-anchor="middle">
+            <text x="785" y="145" font-size="14" font-weight="700" fill="var(--accent)">Qdrant: kb_chunks</text>
+            <text x="785" y="164" font-size="11" opacity="0.85">org_id &rarr; kb_id &rarr; doc_id &rarr; chunk</text>
+            <text x="785" y="180" font-size="9" opacity="0.7">one collection for every org, KB, doc</text>
+          </g>
+          <line x1="785" y1="190" x2="785" y2="300" stroke="currentColor" stroke-width="1.2"/>
+
+          <text x="20" y="212" font-size="11" fill="var(--accent2)" font-weight="700" letter-spacing="0.06em">RETRIEVE (runs per query)</text>
+          <g stroke="currentColor" fill="none" stroke-width="1.2">
+            <rect x="225" y="222" width="150" height="58" rx="4"/>
+            <rect x="395" y="222" width="150" height="58" rx="4"/>
+          </g>
+          <g text-anchor="middle" font-size="13">
+            <text x="300" y="255">Query</text>
+            <text x="470" y="255">Rephrase</text>
+          </g>
+          <line x1="375" y1="251" x2="393" y2="251" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow)"/>
+          <line x1="470" y1="280" x2="470" y2="300" stroke="currentColor" stroke-width="1.2"/>
+
+          <line x1="155" y1="300" x2="785" y2="300" stroke="currentColor" stroke-width="1.2"/>
+          <g stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow)">
+            <line x1="155" y1="300" x2="155" y2="318"/>
+            <line x1="470" y1="300" x2="470" y2="318"/>
+            <line x1="785" y1="300" x2="785" y2="318"/>
+          </g>
+          <text x="312" y="313" font-size="9" opacity="0.65" text-anchor="middle">feeds every lane below</text>
+
+          <g stroke="var(--accent2)" fill="none" stroke-width="1.4">
+            <rect x="20" y="320" width="270" height="80" rx="4"/>
+            <rect x="310" y="320" width="320" height="80" rx="4"/>
+            <rect x="650" y="320" width="270" height="80" rx="4"/>
+          </g>
+          <g text-anchor="middle">
+            <text x="155" y="343" font-size="13" font-weight="600" fill="var(--accent2)">Organization</text>
+            <text x="155" y="360" font-size="11" opacity="0.85">hybrid search, org KB</text>
+            <text x="155" y="376" font-size="10" opacity="0.7">graph expand: on</text>
+            <text x="470" y="343" font-size="13" font-weight="600" fill="var(--accent2)">User</text>
+            <text x="470" y="360" font-size="11" opacity="0.85">hybrid search, user KB</text>
+            <text x="470" y="376" font-size="10" opacity="0.7">graph expand: optional</text>
+            <text x="785" y="343" font-size="13" font-weight="600" fill="var(--accent2)">Agent</text>
+            <text x="785" y="360" font-size="11" opacity="0.85">hybrid search, agent KB</text>
+            <text x="785" y="376" font-size="10" opacity="0.7">graph expand: off</text>
+          </g>
+
+          <g stroke="currentColor" fill="none" stroke-width="1.2" marker-end="url(#arrow)">
+            <polyline points="155,400 155,420 470,420 470,428"/>
+            <polyline points="470,400 470,428"/>
+            <polyline points="785,400 785,420 470,420 470,428"/>
+          </g>
+
+          <rect x="370" y="430" width="200" height="60" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <g text-anchor="middle">
+            <text x="470" y="456" font-size="13" font-weight="600" fill="var(--accent)">Merge + rerank</text>
+            <text x="470" y="473" font-size="10" opacity="0.8">combine the three tiers</text>
+          </g>
+          <line x1="470" y1="490" x2="470" y2="518" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+          <rect x="370" y="520" width="200" height="60" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="470" y="546" font-size="13" font-weight="600">Scope filter</text>
+            <text x="470" y="563" font-size="10" opacity="0.8">owner_scope check</text>
+          </g>
+          <line x1="470" y1="580" x2="470" y2="608" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow)"/>
+
+          <rect x="380" y="610" width="180" height="50" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <text x="470" y="640" text-anchor="middle" font-size="13" font-weight="600" fill="var(--accent)">Agent context</text>
+        </svg>
+        <figcaption>Ingestion (top) tags every chunk with <code class="mono">org_id</code>, <code class="mono">kb_id</code>, <code class="mono">doc_id</code> and writes it once, regardless of tier. Retrieval (bottom) runs the same rephrased query against all three tiers in parallel, each with its own hybrid-search and graph-expansion settings, then merges, reranks, and permission-filters before the agent ever sees a chunk.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-n="03">How Qdrant tells multiple KBs and documents apart</h2>
+    <p>One org can have many Knowledge Bases, and one KB can have many documents. All of it lives in the single <code class="mono">kb_chunks</code> collection above, with no collection-per-org or collection-per-KB. Differentiation is entirely by payload field and index, the same mechanism already running today for DB-schema search (<code class="mono">ai/rag/schema_indexer.py</code>), one level deeper: <code class="mono">org_id</code> as the tenant index, <code class="mono">kb_id</code> as a keyword index (many per org), <code class="mono">doc_id</code> as a keyword index (many per KB).</p>
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 900 220" role="img" aria-label="One organization has many knowledge bases via a kb_id keyword index, one knowledge base has many documents via a doc_id keyword index, one document has many chunks, each stored as a point with a dense and sparse vector, all inside a single Qdrant collection.">
+          <defs>
+            <marker id="arrow2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+          <g stroke="currentColor" fill="none" stroke-width="1.2">
+            <rect x="20" y="60" width="190" height="70" rx="4"/>
+            <rect x="250" y="60" width="190" height="70" rx="4"/>
+            <rect x="480" y="60" width="190" height="70" rx="4"/>
+            <rect x="710" y="60" width="170" height="70" rx="4" stroke="var(--accent)" stroke-width="1.6"/>
+          </g>
+          <g text-anchor="middle">
+            <text x="115" y="88" font-size="13" font-weight="600">Organization</text>
+            <text x="115" y="105" font-size="10" opacity="0.8">org_id, tenant index</text>
+            <text x="345" y="88" font-size="13" font-weight="600">Knowledge Base</text>
+            <text x="345" y="105" font-size="10" opacity="0.8">kb_id, keyword index</text>
+            <text x="575" y="88" font-size="13" font-weight="600">Document</text>
+            <text x="575" y="105" font-size="10" opacity="0.8">doc_id, keyword index</text>
+            <text x="795" y="83" font-size="13" font-weight="600" fill="var(--accent)">Chunk</text>
+            <text x="795" y="100" font-size="10" opacity="0.85" fill="var(--accent)">1 point</text>
+            <text x="795" y="115" font-size="10" opacity="0.85" fill="var(--accent)">dense + sparse vector</text>
+          </g>
+          <g stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow2)">
+            <line x1="210" y1="95" x2="248" y2="95"/>
+            <line x1="440" y1="95" x2="478" y2="95"/>
+            <line x1="670" y1="95" x2="708" y2="95"/>
+          </g>
+          <g font-size="10" opacity="0.7" text-anchor="middle">
+            <text x="229" y="150">1 &rarr; many KBs</text>
+            <text x="459" y="150">1 &rarr; many docs</text>
+            <text x="689" y="150">1 &rarr; many chunks</text>
+          </g>
+        </svg>
+        <figcaption>A query for one agent filters by <code class="mono">org_id</code> (tenant), then <code class="mono">kb_id IN [...]</code> for the KBs it can see, optionally <code class="mono">doc_id IN [...]</code> to narrow further. No cross-collection joins, one query per tier lane.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-n="04">Ingestion pipeline in detail</h2>
+    <p>The four-box ingest row in the diagram above compresses ten real steps. Reused pieces are cited to the file that already does them; everything else is new.</p>
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 940 620" role="img" aria-label="Upload, extract text, split by document structure, then split by semantic meaning. The chunk set then branches into three parallel steps: building chunk-to-chunk links, embedding dense vectors, and embedding sparse vectors. These converge into assembling a point with a deterministic id and payload, deleting any existing points for that document, upserting the new batch, and storing in Qdrant kb_chunks.">
+          <defs>
+            <marker id="arrow3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <g stroke="currentColor" fill="none" stroke-width="1.2">
+            <rect x="20" y="20" width="210" height="60" rx="4"/>
+            <rect x="250" y="20" width="210" height="60" rx="4"/>
+            <rect x="480" y="20" width="210" height="60" rx="4"/>
+            <rect x="710" y="20" width="210" height="60" rx="4"/>
+          </g>
+          <g text-anchor="middle" font-size="13">
+            <text x="125" y="47">Upload</text>
+            <text x="125" y="64" font-size="10" opacity="0.75">file + target KB + doc_type</text>
+            <text x="355" y="47">Extract text</text>
+            <text x="355" y="64" font-size="10" opacity="0.75">PDF / Office / OCR fallback</text>
+            <text x="585" y="47">Structural split</text>
+            <text x="585" y="64" font-size="10" opacity="0.75">by heading / section</text>
+            <text x="815" y="47">Semantic split</text>
+            <text x="815" y="64" font-size="10" opacity="0.75">by meaning within a section</text>
+          </g>
+          <g stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow3)">
+            <line x1="230" y1="50" x2="248" y2="50"/>
+            <line x1="460" y1="50" x2="478" y2="50"/>
+            <line x1="690" y1="50" x2="708" y2="50"/>
+          </g>
+
+          <line x1="815" y1="80" x2="815" y2="102" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="155" y1="102" x2="815" y2="102" stroke="currentColor" stroke-width="1.2"/>
+          <g stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow3)">
+            <line x1="155" y1="102" x2="155" y2="120"/>
+            <line x1="470" y1="102" x2="470" y2="120"/>
+            <line x1="785" y1="102" x2="785" y2="120"/>
+          </g>
+
+          <g stroke="var(--accent2)" fill="none" stroke-width="1.4">
+            <rect x="20" y="122" width="270" height="90" rx="4"/>
+            <rect x="330" y="122" width="280" height="90" rx="4"/>
+            <rect x="650" y="122" width="270" height="90" rx="4"/>
+          </g>
+          <g text-anchor="middle">
+            <text x="155" y="146" font-size="13" font-weight="600" fill="var(--accent2)">Build chunk links</text>
+            <text x="155" y="163" font-size="10" opacity="0.8">sequential + hierarchical</text>
+            <text x="155" y="178" font-size="10" opacity="0.8">from document structure</text>
+            <text x="155" y="197" font-size="9" opacity="0.6">read later by graph expand</text>
+            <text x="470" y="146" font-size="13" font-weight="600" fill="var(--accent2)">Embed dense</text>
+            <text x="470" y="163" font-size="10" opacity="0.8">same embedding model as</text>
+            <text x="470" y="178" font-size="10" opacity="0.8">schema RAG (schema_indexer.py)</text>
+            <text x="785" y="146" font-size="13" font-weight="600" fill="var(--accent2)">Embed sparse</text>
+            <text x="785" y="163" font-size="10" opacity="0.8">BM25-style term vector,</text>
+            <text x="785" y="178" font-size="10" opacity="0.8">one per chunk</text>
+          </g>
+
+          <g stroke="currentColor" fill="none" stroke-width="1.2" marker-end="url(#arrow3)">
+            <polyline points="155,212 155,232 470,232 470,240"/>
+            <polyline points="470,212 470,240"/>
+            <polyline points="785,212 785,232 470,232 470,240"/>
+          </g>
+
+          <rect x="320" y="242" width="300" height="66" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="470" y="264" font-size="13" font-weight="600">Assemble point</text>
+            <text x="470" y="281" font-size="10" opacity="0.8">id = md5(kb_id:doc_id:chunk_index)</text>
+            <text x="470" y="296" font-size="9" opacity="0.7">payload: org_id, kb_id, doc_id, doc_type</text>
+          </g>
+          <line x1="470" y1="308" x2="470" y2="336" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow3)"/>
+
+          <rect x="320" y="338" width="300" height="56" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="470" y="360" font-size="13" font-weight="600">Delete existing points</text>
+            <text x="470" y="377" font-size="10" opacity="0.8">for this {org_id, kb_id, doc_id}</text>
+          </g>
+          <line x1="470" y1="394" x2="470" y2="422" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow3)"/>
+
+          <rect x="360" y="424" width="220" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <text x="470" y="454" text-anchor="middle" font-size="13" font-weight="600">Upsert batch</text>
+          <line x1="470" y1="474" x2="470" y2="502" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow3)"/>
+
+          <rect x="320" y="504" width="300" height="70" rx="5" stroke="var(--accent)" stroke-width="1.8" fill="none"/>
+          <g text-anchor="middle">
+            <text x="470" y="531" font-size="14" font-weight="700" fill="var(--accent)">Qdrant: kb_chunks</text>
+            <text x="470" y="550" font-size="10" opacity="0.85">one point per chunk, dense + sparse vector</text>
+            <text x="470" y="565" font-size="9" opacity="0.65">delete-then-upsert, not update-in-place</text>
+          </g>
+        </svg>
+        <figcaption>Delete-before-upsert on <code class="mono">{org_id, kb_id, doc_id}</code> mirrors <code class="mono">index_schema</code> in <code class="mono">ai/rag/schema_indexer.py:276-285</code>, so re-ingesting one document is always a clean slate rather than an accumulating duplicate. The dense embedding step reuses the same <code class="mono">litellm.aembedding</code> call schema RAG already makes; sparse embedding and chunk-link construction are the two genuinely new pieces of work.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-n="05">Query rephrase in detail</h2>
+    <p>Nothing in this codebase rephrases a query today: the reuse table already flags this as net new. What exists is the shape a rephrase step would reuse, the same last-3-turns-of-history pattern <code class="mono">MainAgent._route</code> already uses for follow-up-aware routing (<code class="mono">ai/agents/main_agent.py:118-121</code>), and the same litellm call wrapper (<code class="mono">:125-130</code>).</p>
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 760 540" role="img" aria-label="The current query and the last three turns of session history are assembled into a rephrasing prompt, the same shape used for follow-up-aware routing, and sent through the same litellm call wrapper. The rewritten query is parsed out; on failure the original query is used unchanged, the same fallback convention schema retrieval already follows. The result is the rephrased query, handed off to hybrid search in all three tier lanes.">
+          <defs>
+            <marker id="arrow8" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <rect x="180" y="20" width="400" height="60" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="41" font-size="13" font-weight="600">Current query + recent session history</text>
+            <text x="380" y="58" font-size="10" opacity="0.75">last 3 turns, same window main_agent uses for routing</text>
+          </g>
+          <line x1="380" y1="80" x2="380" y2="108" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow8)"/>
+
+          <rect x="180" y="110" width="400" height="66" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="131" font-size="13" font-weight="600">Build the rephrasing prompt</text>
+            <text x="380" y="148" font-size="10" opacity="0.75">system instruction + last-3 history + current query</text>
+            <text x="380" y="163" font-size="9" opacity="0.6">same message shape as main_agent.py:114-121</text>
+          </g>
+          <line x1="380" y1="176" x2="380" y2="204" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow8)"/>
+
+          <rect x="180" y="206" width="400" height="64" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="227" font-size="13" font-weight="600">Call the LLM</text>
+            <text x="380" y="244" font-size="10" opacity="0.75">litellm completion, low max_tokens</text>
+            <text x="380" y="259" font-size="9" opacity="0.6">same wrapper routing already uses, main_agent.py:125-130</text>
+          </g>
+          <line x1="380" y1="270" x2="380" y2="298" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow8)"/>
+
+          <rect x="180" y="300" width="400" height="64" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="321" font-size="13" font-weight="600">Parse the rewritten query</text>
+            <text x="380" y="338" font-size="10" opacity="0.75">on failure, use the original query unchanged</text>
+            <text x="380" y="353" font-size="9" opacity="0.6">same fallback convention as schema_retriever.py:133-135</text>
+          </g>
+          <line x1="380" y1="364" x2="380" y2="392" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow8)"/>
+
+          <rect x="280" y="394" width="200" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <text x="380" y="424" text-anchor="middle" font-size="13" font-weight="600">Rephrased query</text>
+          <line x1="380" y1="444" x2="380" y2="472" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow8)"/>
+
+          <rect x="250" y="474" width="260" height="50" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <text x="380" y="504" text-anchor="middle" font-size="13" font-weight="600" fill="var(--accent)">&rarr; hybrid search, all 3 lanes</text>
+        </svg>
+        <figcaption>This shows one rewritten query going to all three lanes, matching every other diagram in this document. Whether rephrasing should instead produce several query variants (a common RAG technique) is not decided and not shown here; adding it would mean fanning this box's output before hybrid search, not changing anything upstream of it.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-n="06">Query embedding in detail</h2>
+    <p>Dense query embedding already exists, in <code class="mono">get_relevant_schema_sync</code>: a plain <code class="mono">litellm.embedding</code> call on the same <code class="mono">settings.EMBEDDING_MODEL</code> used for indexing (<code class="mono">ai/rag/schema_retriever.py:114-124</code>). Sparse query embedding does not: I checked whether the installed <code class="mono">qdrant-client</code>'s optional sparse-embedding helper is available, and it is not. <code class="mono">qdrant_client.models.SparseTextEmbedding</code> resolves to <code class="mono">None</code> at runtime because it depends on the <code class="mono">fastembed</code> package, which is not a dependency of this project (absent from <code class="mono">pyproject.toml</code> and <code class="mono">uv.lock</code>).</p>
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 820 400" role="img" aria-label="The rephrased query text splits into two paths. Dense embedding calls litellm.embedding with the same model schema retrieval already uses. Sparse embedding needs a BM25-style term-weight encoder, and the qdrant-client's optional helper for that is not usable here because its fastembed dependency is not installed. Both paths converge into a dense vector and a sparse vector, ready for hybrid search's query_points call.">
+          <defs>
+            <marker id="arrow10" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <rect x="300" y="20" width="220" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <text x="410" y="49" text-anchor="middle" font-size="13" font-weight="600">Rephrased query (text)</text>
+          <line x1="410" y1="70" x2="410" y2="88" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="205" y1="88" x2="615" y2="88" stroke="currentColor" stroke-width="1.2"/>
+          <g stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow10)">
+            <line x1="205" y1="88" x2="205" y2="98"/>
+            <line x1="615" y1="88" x2="615" y2="98"/>
+          </g>
+
+          <g stroke="var(--accent2)" fill="none" stroke-width="1.4">
+            <rect x="40" y="100" width="330" height="100" rx="4"/>
+            <rect x="450" y="100" width="330" height="100" rx="4"/>
+          </g>
+          <g text-anchor="middle">
+            <text x="205" y="122" font-size="13" font-weight="600" fill="var(--accent2)">Dense embedding</text>
+            <text x="205" y="139" font-size="10" opacity="0.8">same litellm.embedding call schema</text>
+            <text x="205" y="154" font-size="10" opacity="0.8">retrieval uses, extracts item.embedding</text>
+            <text x="205" y="169" font-size="9" opacity="0.6">schema_retriever.py:114-124</text>
+            <text x="615" y="122" font-size="13" font-weight="600" fill="var(--accent2)">Sparse embedding</text>
+            <text x="615" y="139" font-size="10" opacity="0.8">needs a BM25-style term-weight encoder</text>
+            <text x="615" y="154" font-size="9" opacity="0.6">qdrant-client's optional SparseTextEmbedding</text>
+            <text x="615" y="167" font-size="9" opacity="0.6">needs fastembed, not installed in this project</text>
+          </g>
+
+          <g stroke="currentColor" fill="none" stroke-width="1.2" marker-end="url(#arrow10)">
+            <polyline points="205,200 205,220 410,220 410,228"/>
+            <polyline points="615,200 615,220 410,220 410,228"/>
+          </g>
+
+          <rect x="270" y="230" width="280" height="60" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="410" y="253" font-size="13" font-weight="600">Dense vector + sparse vector</text>
+            <text x="410" y="270" font-size="9" opacity="0.7">same sync/async split as schema retrieval</text>
+          </g>
+          <line x1="410" y1="290" x2="410" y2="318" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow10)"/>
+
+          <rect x="260" y="320" width="300" height="50" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <text x="410" y="350" text-anchor="middle" font-size="13" font-weight="600" fill="var(--accent)">&rarr; hybrid search's Qdrant call</text>
+        </svg>
+        <figcaption>The dense path costs nothing new: same model, same call shape, same sync-wrapped-for-async pattern the multi_orchestration engine already relies on because it has no event loop to await from. The sparse path is a real open decision, not a detail to fill in later: either add <code class="mono">fastembed</code> as a new dependency, or bring a BM25 encoder some other way. This document doesn't pick one.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-n="07">Hybrid search in detail</h2>
+    <p>Today's search inside a tier's KB would be a single dense-only <code class="mono">query_points</code> call, the same shape <code class="mono">get_relevant_schema_sync</code> already makes (<code class="mono">ai/rag/schema_retriever.py</code>). Hybrid search adds a second, sparse vector and fuses both in one call, using capability already present in the installed <code class="mono">qdrant-client</code>, confirmed by inspecting <code class="mono">qdrant_client.models</code> directly: <code class="mono">Prefetch</code>, <code class="mono">FusionQuery</code>, <code class="mono">Fusion.RRF</code>.</p>
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 940 480" role="img" aria-label="The rephrased query and this tier's kb_id list feed three parallel steps: embedding a dense vector the same way schema RAG already does, embedding a new sparse vector, and building a filter on org_id and kb_id that mirrors the existing schema filter. These three converge into one query_points call using Qdrant's prefetch and reciprocal rank fusion, producing ranked hits for this tier, handed off to graph expand.">
+          <defs>
+            <marker id="arrow9" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <rect x="270" y="20" width="400" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <text x="470" y="49" text-anchor="middle" font-size="13" font-weight="600">Rephrased query + this tier's kb_id(s)</text>
+          <line x1="470" y1="70" x2="470" y2="88" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="155" y1="88" x2="785" y2="88" stroke="currentColor" stroke-width="1.2"/>
+          <g stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow9)">
+            <line x1="155" y1="88" x2="155" y2="98"/>
+            <line x1="470" y1="88" x2="470" y2="98"/>
+            <line x1="785" y1="88" x2="785" y2="98"/>
+          </g>
+
+          <g stroke="var(--accent2)" fill="none" stroke-width="1.4">
+            <rect x="20" y="100" width="270" height="80" rx="4"/>
+            <rect x="330" y="100" width="280" height="80" rx="4"/>
+            <rect x="650" y="100" width="270" height="80" rx="4"/>
+          </g>
+          <g text-anchor="middle">
+            <text x="155" y="124" font-size="13" font-weight="600" fill="var(--accent2)">Embed dense</text>
+            <text x="155" y="141" font-size="10" opacity="0.8">same embedding call schema RAG uses</text>
+            <text x="155" y="156" font-size="9" opacity="0.6">schema_indexer.py's _embed_batch</text>
+            <text x="470" y="124" font-size="13" font-weight="600" fill="var(--accent2)">Embed sparse</text>
+            <text x="470" y="141" font-size="10" opacity="0.8">BM25-style sparse vector</text>
+            <text x="470" y="156" font-size="9" opacity="0.6">no existing code for this, genuinely new</text>
+            <text x="785" y="124" font-size="13" font-weight="600" fill="var(--accent2)">Build filter</text>
+            <text x="785" y="141" font-size="10" opacity="0.8">org_id (tenant) + kb_id IN [...]</text>
+            <text x="785" y="156" font-size="9" opacity="0.6">mirrors schema_retriever.py:16-20</text>
+          </g>
+
+          <g stroke="currentColor" fill="none" stroke-width="1.2" marker-end="url(#arrow9)">
+            <polyline points="155,180 155,200 470,200 470,208"/>
+            <polyline points="470,180 470,208"/>
+            <polyline points="785,180 785,200 470,200 470,208"/>
+          </g>
+
+          <rect x="320" y="210" width="300" height="90" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <g text-anchor="middle">
+            <text x="470" y="233" font-size="13" font-weight="600" fill="var(--accent)">One query_points call</text>
+            <text x="470" y="250" font-size="10" opacity="0.85">prefetch = [dense, sparse]</text>
+            <text x="470" y="266" font-size="10" opacity="0.85">query = FusionQuery(fusion=Fusion.RRF)</text>
+            <text x="470" y="282" font-size="9" opacity="0.6">one Qdrant round trip (qdrant-client 1.18.0)</text>
+          </g>
+          <line x1="470" y1="300" x2="470" y2="328" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow9)"/>
+
+          <rect x="350" y="330" width="240" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <text x="470" y="360" text-anchor="middle" font-size="13" font-weight="600">Ranked hits for this tier</text>
+          <line x1="470" y1="380" x2="470" y2="408" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow9)"/>
+
+          <rect x="370" y="410" width="200" height="50" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <text x="470" y="440" text-anchor="middle" font-size="13" font-weight="600" fill="var(--accent)">&rarr; Graph expand</text>
+        </svg>
+        <figcaption>The filter is the one piece already proven at scale: it's the exact tenant-plus-keyword-index pattern from schema RAG, just <code class="mono">kb_id</code> where that code has <code class="mono">db_conn_id</code>. The fusion is new wiring, not new capability: nothing in this codebase calls <code class="mono">Prefetch</code> or <code class="mono">FusionQuery</code> today, but both exist on the client already installed.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-n="08">Graph expand in detail</h2>
+    <p>This runs inside each tier's hybrid-search lane, using the links <code class="mono">Build chunk links</code> wrote at ingest time. The pull is a direct point lookup by id (<code class="mono">QdrantClient.retrieve</code>, confirmed on the installed client), not another similarity search.</p>
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 760 640" role="img" aria-label="Hybrid search hits for one tier, each carrying linked chunk ids from ingest. If graph expand is off for this tier, the hits pass through unchanged. If on, the linked chunk ids are collected, fetched from Qdrant by direct point lookup rather than a new search, and merged into the hit set. Both paths reach the same expanded hit set, which is handed off to merge and rerank.">
+          <defs>
+            <marker id="arrow7" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <rect x="180" y="20" width="400" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="41" font-size="13" font-weight="600">Hybrid search hits for this tier</text>
+            <text x="380" y="58" font-size="10" opacity="0.75">each carries linked_chunk_ids from ingest</text>
+          </g>
+          <line x1="380" y1="70" x2="380" y2="93" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow7)"/>
+
+          <polygon points="380,95 470,140 380,185 290,140" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <text x="380" y="145" text-anchor="middle" font-size="11" font-weight="600">expand on?</text>
+
+          <text x="410" y="198" font-size="10" opacity="0.7">yes</text>
+          <line x1="380" y1="185" x2="380" y2="208" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow7)"/>
+
+          <text x="530" y="133" font-size="10" opacity="0.7">no</text>
+          <polyline points="470,140 670,140 670,318" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#arrow7)"/>
+
+          <rect x="180" y="210" width="400" height="60" rx="4" stroke="var(--accent2)" stroke-width="1.4" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="232" font-size="13" font-weight="600" fill="var(--accent2)">Collect linked_chunk_ids</text>
+            <text x="380" y="249" font-size="10" opacity="0.8">from every hit, minus ids already in this tier's hits</text>
+          </g>
+          <line x1="380" y1="270" x2="380" y2="298" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow7)"/>
+
+          <rect x="600" y="320" width="140" height="60" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="670" y="345" font-size="12" font-weight="600">Skip</text>
+            <text x="670" y="362" font-size="9" opacity="0.75">unchanged</text>
+          </g>
+
+          <rect x="180" y="300" width="400" height="70" rx="4" stroke="var(--accent2)" stroke-width="1.4" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="322" font-size="13" font-weight="600" fill="var(--accent2)">Fetch by point id</text>
+            <text x="380" y="339" font-size="10" opacity="0.8">QdrantClient.retrieve(ids=[...])</text>
+            <text x="380" y="354" font-size="9" opacity="0.6">a point lookup, not a new query_points search</text>
+          </g>
+          <line x1="380" y1="370" x2="380" y2="398" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow7)"/>
+
+          <rect x="180" y="400" width="400" height="70" rx="4" stroke="var(--accent2)" stroke-width="1.4" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="422" font-size="13" font-weight="600" fill="var(--accent2)">Merge into hit set</text>
+            <text x="380" y="439" font-size="10" opacity="0.8">fetched neighbors have no fresh similarity score</text>
+            <text x="380" y="454" font-size="9" opacity="0.6">scoring rule for them is not decided yet</text>
+          </g>
+          <line x1="380" y1="470" x2="380" y2="498" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow7)"/>
+          <polyline points="670,380 670,485 380,485 380,498" stroke="currentColor" stroke-width="1.2" fill="none" marker-end="url(#arrow7)"/>
+
+          <rect x="230" y="500" width="300" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <text x="380" y="530" text-anchor="middle" font-size="13" font-weight="600">Expanded hits for this tier</text>
+          <line x1="380" y1="550" x2="380" y2="568" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow7)"/>
+
+          <rect x="290" y="570" width="180" height="50" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <text x="380" y="600" text-anchor="middle" font-size="13" font-weight="600" fill="var(--accent)">&rarr; Merge + rerank</text>
+        </svg>
+        <figcaption>The "how many hops" question from graph link-building carries over here unresolved: this shows one hop. Scoring is unresolved too. A chunk pulled in by a link was never ranked by the search itself, and this document doesn't invent a number for what score it should carry into merge + rerank.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-n="09">Merge + rerank in detail</h2>
+    <p>Each tier lane already returns a ranked list: its own dense and sparse results fused with Qdrant's <code class="mono">Fusion.RRF</code> inside that lane's single <code class="mono">query_points</code> call. Merge + rerank is what happens next: three independently-ranked lists, from three separate filtered Qdrant calls, need to become one.</p>
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 940 460" role="img" aria-label="Ranked hit lists arrive from the organization, user, and agent lanes, each already fused internally with reciprocal rank fusion. The hits are tagged with their source tier, then fused a second time across all three lanes using the same reciprocal rank fusion technique, then truncated to fit the agent's context budget, before handing off to the scope filter.">
+          <defs>
+            <marker id="arrow4" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <g stroke="var(--accent2)" fill="none" stroke-width="1.4">
+            <rect x="20" y="20" width="270" height="60" rx="4"/>
+            <rect x="330" y="20" width="280" height="60" rx="4"/>
+            <rect x="650" y="20" width="270" height="60" rx="4"/>
+          </g>
+          <g text-anchor="middle">
+            <text x="155" y="44" font-size="13" font-weight="600" fill="var(--accent2)">From Organization lane</text>
+            <text x="155" y="61" font-size="10" opacity="0.8">top-k, already RRF-fused</text>
+            <text x="470" y="44" font-size="13" font-weight="600" fill="var(--accent2)">From User lane</text>
+            <text x="470" y="61" font-size="10" opacity="0.8">top-k, already RRF-fused</text>
+            <text x="785" y="44" font-size="13" font-weight="600" fill="var(--accent2)">From Agent lane</text>
+            <text x="785" y="61" font-size="10" opacity="0.8">top-k, already RRF-fused</text>
+          </g>
+
+          <g stroke="currentColor" fill="none" stroke-width="1.2" marker-end="url(#arrow4)">
+            <polyline points="155,80 155,100 470,100 470,108"/>
+            <polyline points="470,80 470,108"/>
+            <polyline points="785,80 785,100 470,100 470,108"/>
+          </g>
+
+          <rect x="340" y="110" width="260" height="52" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="470" y="131" font-size="13" font-weight="600">Tag with source tier</text>
+            <text x="470" y="148" font-size="9" opacity="0.7">so the scope filter knows the source KB</text>
+          </g>
+          <line x1="470" y1="162" x2="470" y2="190" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow4)"/>
+
+          <rect x="320" y="192" width="300" height="72" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <g text-anchor="middle">
+            <text x="470" y="216" font-size="13" font-weight="600" fill="var(--accent)">Cross-tier RRF fusion</text>
+            <text x="470" y="233" font-size="10" opacity="0.85">same Fusion.RRF each lane already</text>
+            <text x="470" y="247" font-size="10" opacity="0.85">uses, applied once more across lanes</text>
+            <text x="470" y="258" font-size="9" opacity="0.6">app-level: 3 separate filtered calls, not 1</text>
+          </g>
+          <line x1="470" y1="264" x2="470" y2="292" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow4)"/>
+
+          <rect x="370" y="294" width="200" height="56" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="470" y="316" font-size="13" font-weight="600">Truncate</text>
+            <text x="470" y="333" font-size="9" opacity="0.8">to the agent's context budget</text>
+          </g>
+          <line x1="470" y1="350" x2="470" y2="378" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow4)"/>
+
+          <rect x="380" y="380" width="180" height="50" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <text x="470" y="410" text-anchor="middle" font-size="13" font-weight="600" fill="var(--accent)">&rarr; Scope filter</text>
+        </svg>
+        <figcaption>The tag-with-tier step exists only because the scope filter runs after merge, not before: a chunk still needs to know which KB it came from to be checked against <code class="mono">owner_scope</code>. The fusion step is deliberately the same RRF technique already used inside each lane, not a separate reranker model. Nothing in this codebase calls a dedicated reranker today, so this document doesn't assume one.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-n="10">Scope filter in detail</h2>
+    <p>This is not a new rule: it's the exact visibility check agents already use, applied to chunks instead of agents. <code class="mono">build_agent_visibility_clauses</code> in <code class="mono">backend/agent/services.py:562-589</code> is the single visibility rule for the whole app today (reused as-is by chat, direct_agent, and widget code); a KB's <code class="mono">owner_scope</code> would be checked the same way.</p>
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 760 580" role="img" aria-label="Ranked hits tagged with their source kb_id have each distinct KB's scope resolved once per batch, then the same four visibility clauses agents already use are checked: organization-wide, personal owned by the requester, selected users the requester is one of, or team the requester belongs to, with no bypass for admin roles. Chunks that match none of the clauses are dropped silently. The rest reach the agent's context.">
+          <defs>
+            <marker id="arrow5" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <rect x="180" y="20" width="400" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="41" font-size="13" font-weight="600">Ranked hits from merge + rerank</text>
+            <text x="380" y="58" font-size="10" opacity="0.75">each tagged with its source kb_id</text>
+          </g>
+          <line x1="380" y1="70" x2="380" y2="98" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow5)"/>
+
+          <rect x="180" y="100" width="400" height="60" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="121" font-size="13" font-weight="600">Resolve each KB's scope</text>
+            <text x="380" y="138" font-size="10" opacity="0.75">owner_scope, created_by, allowed_user_ids, team_id</text>
+            <text x="380" y="153" font-size="9" opacity="0.6">once per distinct kb_id in the batch, not per chunk</text>
+          </g>
+          <line x1="380" y1="160" x2="380" y2="188" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow5)"/>
+
+          <rect x="100" y="190" width="560" height="190" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <text x="130" y="216" font-size="13" font-weight="600" fill="var(--accent)">Keep the chunk if ANY clause matches</text>
+          <g font-size="10" font-family="ui-monospace, monospace">
+            <text x="140" y="240">&#8226; organization-wide KB: owner_scope not in {user, selected_users, team}</text>
+            <text x="140" y="260">&#8226; owner_scope = user: created_by == requesting user</text>
+            <text x="140" y="280">&#8226; owner_scope = selected_users: created_by == user OR user &isin; allowed_user_ids</text>
+            <text x="140" y="300">&#8226; owner_scope = team: created_by == user OR user is a current team member</text>
+          </g>
+          <text x="140" y="326" font-size="10" opacity="0.85" fill="var(--accent)">no exception for org_admin / org_manager / super_admin, same as agents today</text>
+          <text x="140" y="346" font-size="9" opacity="0.6">same 4 clauses as build_agent_visibility_clauses, backend/agent/services.py:562-589</text>
+
+          <line x1="380" y1="380" x2="380" y2="408" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow5)"/>
+
+          <rect x="230" y="410" width="300" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="431" font-size="13" font-weight="600">Drop everything else</text>
+            <text x="380" y="448" font-size="9" opacity="0.75">excluded silently, no error, just absent</text>
+          </g>
+          <line x1="380" y1="460" x2="380" y2="488" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow5)"/>
+
+          <rect x="290" y="490" width="180" height="50" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <text x="380" y="520" text-anchor="middle" font-size="13" font-weight="600" fill="var(--accent)">Agent context</text>
+        </svg>
+        <figcaption>The four clauses are copied, not reinvented: organization-wide KBs are visible to everyone in the org; a personal KB only to its creator; a selected-users KB to its creator or anyone named in <code class="mono">allowed_user_ids</code>; a team KB to its creator or a current member of <code class="mono">team_id</code>. Per the comment on <code class="mono">build_agent_visibility_clauses</code>, there is deliberately no admin bypass: a personal KB stays private even from org_admin/org_manager/super_admin.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <h2 data-n="11">Agent context in detail</h2>
+    <p>This is also not new machinery: it's the exact path <code class="mono">search_schema</code> already uses today, read directly from <code class="mono">ai/agents/sub_agent.py</code> and <code class="mono">ai/rag/schema_retriever.py</code>. A KB retrieval tool would return a plain string the same way and travel the same route into the model.</p>
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 760 464" role="img" aria-label="Filtered chunks are formatted into citeable text, returned as a plain tool-result string, and appended to the conversation as a tool role message. From there it splits two ways: the next model call in this turn sees it immediately, and it is also logged to the session's append-only memory so future turns can reference it too.">
+          <defs>
+            <marker id="arrow6" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+            </marker>
+          </defs>
+
+          <rect x="180" y="20" width="400" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <text x="380" y="49" text-anchor="middle" font-size="13" font-weight="600">Filtered chunks (from scope filter)</text>
+          <line x1="380" y1="70" x2="380" y2="98" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow6)"/>
+
+          <rect x="180" y="100" width="400" height="64" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="122" font-size="13" font-weight="600">Format into citeable text</text>
+            <text x="380" y="139" font-size="10" opacity="0.75">doc, KB tier, chunk text, source id</text>
+            <text x="380" y="154" font-size="9" opacity="0.6">same shape as _format_schema_hits, schema_retriever.py:23-68</text>
+          </g>
+          <line x1="380" y1="164" x2="380" y2="192" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow6)"/>
+
+          <rect x="180" y="194" width="400" height="50" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <text x="380" y="223" text-anchor="middle" font-size="13" font-weight="600">Return as a plain tool-result string</text>
+          <line x1="380" y1="244" x2="380" y2="272" stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow6)"/>
+
+          <rect x="180" y="274" width="400" height="60" rx="4" stroke="var(--accent)" stroke-width="1.6" fill="none"/>
+          <g text-anchor="middle">
+            <text x="380" y="296" font-size="13" font-weight="600" fill="var(--accent)">Append as a tool-role message</text>
+            <text x="380" y="313" font-size="10" font-family="ui-monospace, monospace" opacity="0.85">{role: "tool", tool_call_id, content}</text>
+            <text x="380" y="327" font-size="9" opacity="0.6">sub_agent.py:355-359</text>
+          </g>
+
+          <line x1="380" y1="334" x2="380" y2="352" stroke="currentColor" stroke-width="1.2"/>
+          <line x1="205" y1="352" x2="555" y2="352" stroke="currentColor" stroke-width="1.2"/>
+          <g stroke="currentColor" stroke-width="1.2" marker-end="url(#arrow6)">
+            <line x1="205" y1="352" x2="205" y2="362"/>
+            <line x1="555" y1="352" x2="555" y2="362"/>
+          </g>
+
+          <rect x="40" y="364" width="330" height="80" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="205" y="388" font-size="13" font-weight="600">This turn's next model call</text>
+            <text x="205" y="405" font-size="10" opacity="0.75">sees it immediately, it's already</text>
+            <text x="205" y="420" font-size="10" opacity="0.75">in all_messages when the LLM is called again</text>
+          </g>
+
+          <rect x="390" y="364" width="330" height="80" rx="4" stroke="currentColor" stroke-width="1.2" fill="none"/>
+          <g text-anchor="middle">
+            <text x="555" y="388" font-size="13" font-weight="600">Session memory</text>
+            <text x="555" y="405" font-size="10" opacity="0.75">MemorySchema.append_memory</text>
+            <text x="555" y="420" font-size="9" opacity="0.75">sub_agent.py:267-278, for later turns too</text>
+          </g>
+        </svg>
+        <figcaption>Nothing here is a new mechanism: a KB search tool returns a string exactly like <code class="mono">execute_search_schema_sync</code> does today, and that string travels the same fork every tool result already does: into this turn's next LLM call, and into the append-only per-session memory log so it survives past this turn.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section class="wide">
+    <h2 data-n="12">Staying reliable and scalable, not just correct on paper</h2>
+    <ol class="open-q">
+      <li><span><strong>Ingestion must be a background task, not an inline request.</strong> Chunking + dual embedding + link-building for a large document can't run inside the upload HTTP request. Reuse the exact pattern <code class="mono">backend/dbconnection/services.py</code> already uses for schema indexing: <code class="mono">asyncio.create_task(...)</code> fires the pipeline, the request returns immediately (<code class="mono">:453-455</code>), and a status flag gets set on completion (<code class="mono">schema_indexed: True</code> at <code class="mono">:397</code>, would be <code class="mono">kb_document_indexed</code> here). This isn't shown anywhere above and needs to be.</span></li>
+      <li><span><strong>A failed lane shouldn't fail the query.</strong> If one tier's Qdrant call errors or times out, merge + rerank should proceed with whichever lanes succeeded, the same discipline <code class="mono">get_relevant_schema_sync</code> already follows: catch, log, degrade, never crash the agent turn over a search failure (<code class="mono">schema_retriever.py:133-135</code>). This isn't in the pipeline diagrams above and should be, wherever hybrid search is actually implemented.</span></li>
+      <li><span><strong>One collection scales by tenant count, not by row count.</strong> <code class="mono">org_id</code> as a tenant index plus a per-tenant HNSW subgraph (<code class="mono">payload_m</code>) is Qdrant's own recommended pattern for many tenants sharing one collection, already proven at production scale on <code class="mono">schema_tables</code>. <code class="mono">kb_chunks</code> inherits that property directly; adding more orgs, KBs, or documents doesn't change the shape of the solution.</span></li>
+      <li><span><strong>Sparse search is additive, not a blocker.</strong> Until a sparse encoder is chosen (section 06's open item), hybrid search's <code class="mono">Prefetch</code> list can run dense-only, the exact single-vector shape schema RAG already runs in production today. This ships in a dense-only phase first rather than waiting on the missing piece.</span></li>
+      <li><span><strong>Delete-then-upsert has a real, inherited gap.</strong> Re-ingesting a document briefly leaves zero points for it between the delete and the upsert, the same behavior <code class="mono">schema_indexer.py</code> already has for DB schemas today. That's been fine at schema scale (dozens of tables); at document scale, a single doc can be thousands of chunks, so that window gets longer and is worth re-checking before assuming it carries over unchanged.</span></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2 data-n="13">Frontend</h2>
+    <p>Everything above is backend and <code class="mono">ai/</code> only. The frontend (<code class="mono">One-AI-UI</code>: Next.js 16 App Router, React 19, TypeScript, Tailwind v4 with shadcn) already has three of the four UI patterns this feature needs, just not wired to a Knowledge Base yet. Read directly from the actual components, not designed from scratch.</p>
+    <table>
+      <thead><tr><th>Frontend piece</th><th>Status</th><th>Where</th></tr></thead>
+      <tbody>
+        <tr><td>KB creation form (owner_scope, allowed_user_ids, team_id)</td><td><span class="tag exist">mirrors existing pattern</span></td><td><code class="mono">agent-builder-popup.tsx:18-22</code> (scope pills), edit page's <code class="mono">allowed_user_ids</code> checklist and <code class="mono">team_id</code> pills</td></tr>
+        <tr><td>Document upload (drag-drop, multipart POST)</td><td><span class="tag exist">mirrors existing pattern</span></td><td><code class="mono">project-files-dialog.tsx:216-223</code>, <code class="mono">lib/api/projects.ts:76-79</code></td></tr>
+        <tr><td>Connect KB to agent (browse, select, attach)</td><td><span class="tag exist">mirrors existing pattern</span></td><td><code class="mono">components/mcp/agent-mcp-step.tsx</code>, the org-wide-list &rarr; expand &rarr; check &rarr; attach shape</td></tr>
+        <tr><td><code class="mono">rag_ids</code> on the Agent type</td><td><span class="tag partial">not declared yet</span></td><td>absent from <code class="mono">AgentPublic</code> in <code class="mono">types/index.ts:99-101</code>, only <code class="mono">tool_ids</code>/<code class="mono">connector_ids</code>/MCP attachments exist today</td></tr>
+        <tr><td><code class="mono">knowledge_base_ids</code> on the Project type</td><td><span class="tag partial">dangling stub</span></td><td><code class="mono">types/index.ts:140,159,173</code>, declared, referenced nowhere else in the repo</td></tr>
+        <tr><td>KB management screens (list, create, delete, tier picker)</td><td><span class="tag new">net new</span></td><td>no existing screen</td></tr>
+        <tr><td>Chunk citations in chat</td><td><span class="tag new">net new</span></td><td>playground renders only markdown (<code class="mono">app/(dashboard)/client/playground/page.tsx:506-592</code>); the nearest precedent is the separate Trace link on <code class="mono">msg.trace_id</code> (same file, 578-587), a link out to the tracing UI, not an inline citation</td></tr>
+      </tbody>
+    </table>
+
+    <div class="figure-wrap">
+      <figure>
+        <svg viewBox="0 0 975 140" role="img" aria-label="The agent creation wizard's existing steps: Identity, Tools, Connectors, MCP Servers, Prompt and Guardrails, Review. A new Knowledge Bases step slots in alongside the other resource-attachment steps, Tools, Connectors, and MCP Servers.">
+          <g stroke="currentColor" fill="none" stroke-width="1.2">
+            <rect x="20" y="40" width="125" height="60" rx="4"/>
+            <rect x="155" y="40" width="125" height="60" rx="4"/>
+            <rect x="290" y="40" width="125" height="60" rx="4"/>
+            <rect x="425" y="40" width="125" height="60" rx="4"/>
+            <rect x="695" y="40" width="125" height="60" rx="4"/>
+            <rect x="830" y="40" width="125" height="60" rx="4"/>
+          </g>
+          <rect x="560" y="40" width="125" height="60" rx="4" stroke="var(--accent)" stroke-width="1.8" fill="none"/>
+          <g text-anchor="middle" font-size="11">
+            <text x="82" y="74">Identity</text>
+            <text x="217" y="74">Tools</text>
+            <text x="352" y="74">Connectors</text>
+            <text x="487" y="74">MCP Servers</text>
+            <text x="622" y="66" font-size="10" fill="var(--accent)" font-weight="600">Knowledge</text>
+            <text x="622" y="80" font-size="10" fill="var(--accent)" font-weight="600">Bases</text>
+            <text x="757" y="66">Prompt &amp;</text>
+            <text x="757" y="80">Guardrails</text>
+            <text x="892" y="74">Review</text>
+          </g>
+        </svg>
+        <figcaption>The existing wizard steps, read from <code class="mono">app/(dashboard)/client/agents/[id]/edit/page.tsx</code>. Knowledge Bases (highlighted) sits naturally alongside the other resource-attachment steps, Tools, Connectors, and MCP Servers. Exact ordering is a UI decision this document doesn't make.</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <footer>drafted from whiteboard photos, 2026-08-18</footer>
+</div>
